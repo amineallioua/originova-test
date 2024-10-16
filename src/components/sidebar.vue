@@ -8,6 +8,12 @@
       <li><v-icon>mdi-cart</v-icon> <p>  product</p></li>
     </router-link>
     </div>
+    <div class="routContainer" >
+          <router-link to="/order" >
+      <li><v-icon>mdi-receipt</v-icon> <p>  order</p></li>
+    </router-link>
+    </div>
+    
     </ul>
 
   </div>
@@ -78,6 +84,9 @@
     padding:10px;
     padding-left: 18px;
     
+  }
+  a{
+    text-decoration: none;
   }
   </style>
   

@@ -4,13 +4,15 @@ import Login from '../components/login&register/login.vue'; // Fixed quote and n
 import Register from '../components/login&register/register.vue';
 import forGet from '../components/login&register/forget.vue';
 import addProduct from '../components/product/addProduct.vue'; 
+import orDer from'../components/oreder/index.vue';
 
 const routes = [
   { path: '/home', component: HomePage },
   { path: '/', component: Login }, // Updated component name
   { path: '/register', component: Register }, // Updated component name
   { path: '/forget', component: forGet }, 
-  { path:'/addProduct', component:addProduct  }
+  { path:'/addProduct', component:addProduct  },
+  {path:'/order' ,  component:orDer  }
 ];
 
 const router = createRouter({
