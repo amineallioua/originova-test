@@ -81,7 +81,10 @@
   import { ref, computed, onMounted } from 'vue';
   import { useUserStore } from '@/stores/userstoe'; // Corrected the typo in the import
 
+
   import axios from 'axios';
+  import Pusher from 'pusher-js';
+Pusher.logToConsole = true;
   
   export default {
     name: 'usersPage',
@@ -94,6 +97,12 @@
       const userStore = useUserStore();
       const dialogTitle = ref('');
       const dialogText = ref('');
+      const pusher = new Pusher('1a9e1b88fcbdd25d7a99', {
+  cluster: 'eu',
+  // Add any other options you need
+});
+const channel = pusher.subscribe('originova-channel');
+      
   
       const users = ref([]);
   
@@ -119,6 +128,15 @@
             return 'grey';
         }
       };
+      const subscribeToNotifications =  () => {
+  
+  channel.bind('user-logout', function(data) {
+    
+    alert("The account is blocked"); 
+    console.log(data); 
+  });
+}
+
   
       const filteredusers = computed(() => {
         if (!selectedStatus.value) {
@@ -129,7 +147,7 @@
   
       const fetchdata = async () => {
         try {
-          const response = await axios.get(`http://192.168.1.5:8000/api/admin/users`,   {
+          const response = await axios.get(`http://192.168.1.5:8000/api/admin/users/?page=3`,   {
             headers: {
                 Authorization: `Bearer ${userStore.user.token}`, 
                 'Content-Type': 'application/json',},})
@@ -158,7 +176,8 @@
   if (selectedOrder.value && actionType.value) {
     const userId = selectedOrder.value.id; // Assuming the user object has an 'id' field
     const action = actionType.value === 'active' ? 'active' : 'block'; // Determine the action
-
+  
+   
     try {
       // Make the API request to block or activate the user
       await axios.post(`http://192.168.1.5:8000/api/admin/users/${userId}/${action}`, {}, {
@@ -167,10 +186,10 @@
           'Content-Type': 'application/json',
         },
       });
-
+      subscribeToNotifications();
      fetchdata();
 
-      // Close the confirmation dialog
+    
       closeConfirmDialog();
     } catch (error) {
       console.error('Error updating user status:', error);

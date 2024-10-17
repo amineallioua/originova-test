@@ -112,7 +112,7 @@ export default {
         file.value.forEach((f) => {
           formData.append('file[]', f); // Assuming the backend expects file array
         });
-       console.log(formData)
+       
         const response = await axios.post(
           'http://192.168.1.5:8000/api/admin/create-product',
           formData,
@@ -125,7 +125,7 @@ export default {
         );
 
         // Log the response or handle it as necessary
-        console.log("hjhjkhj" , response.data);
+        console.log(response.data);
 
         
         dialog.value = true; // Show the dialog after successful creation

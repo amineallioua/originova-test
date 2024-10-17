@@ -5,7 +5,8 @@ import Register from '../components/login&register/register.vue';
 import forGet from '../components/login&register/forget.vue';
 import addProduct from '../components/product/addProduct.vue'; 
 import orDer from'../components/oreder/index.vue';
-import usersPage from '../components/users/index.vue'
+import usersPage from '../components/users/index.vue';
+import reSet from '../components/login&register/reset.vue';
 
 const routes = [
   { path: '/home', component: HomePage },
@@ -14,7 +15,8 @@ const routes = [
   { path: '/forget', component: forGet }, 
   { path:'/addProduct', component:addProduct  },
   {path:'/order' ,  component:orDer  },
-  {path:'/users' , component:usersPage }
+  {path:'/users' , component:usersPage },
+  {path:'/password-reset/:token' , component:reSet },
 ];
 
 const router = createRouter({
