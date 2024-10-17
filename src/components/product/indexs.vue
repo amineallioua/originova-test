@@ -22,11 +22,10 @@
           single-line
         ></v-select>
         <v-btn
-          style="background-color: blue; color: white; max-width: 200px; min-width: 30px; position: absolute; right: 15px" to="/addProduct"
+          style="background-color: blue; color: white; max-width: 200px; min-width: 30px; position: absolute; right: 15px" 
+          to="/addProduct"
         >
-          
-            CREATE PRODUCT
-          
+          CREATE PRODUCT
         </v-btn>
       </div>
       <v-data-table
@@ -95,14 +94,7 @@
               outlined
               required
             ></v-select>
-            <v-file-input
-             v-model="editedItem.files"
-             label="Upload Product Image"
-             outlined
-             accept="image/*"
-             multiple
-        ></v-file-input>
-
+        
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
@@ -128,10 +120,10 @@ export default {
     const filterOptions = ref(['All', 'Men', 'Women']);
     const userStore = useUserStore();
     const headers = [
-      { text:'id', value:'id', title:'id' },
-      { text: 'Product Name', value: 'name', title:'name' },
-      { text: 'Category ID', value: 'category_id', },
-      { text: 'Actions', value: 'actions', sortable: false , title:'actions' }
+      { text: 'ID', value: 'id' },
+      { text: 'Product Name', value: 'name' },
+      { text: 'Category ID', value: 'category_id' },
+      { text: 'Actions', value: 'actions', sortable: false }
     ];
 
     const items = ref([]);
@@ -139,12 +131,13 @@ export default {
     const itemToDelete = ref(null);
     const editDialog = ref(false);
     const editedItem = ref({
+      id: null,
       name: '',
       description: '',
       quantity: null,
       price: null,
       category_id: null,
-      files: [], // Initialize files as an array
+
     });
 
     const filtereditems = computed(() => {
@@ -155,11 +148,7 @@ export default {
         );
       }
       if (selectedFilter.value !== 'All') {
-        if (selectedFilter.value == 'Men') {
-          filtered = filtered.filter(item => item.category_id == '1');
-        } else {
-          filtered = filtered.filter(item => item.category_id == '2');
-        }
+        filtered = filtered.filter(item => item.category_id === (selectedFilter.value === 'women' ? '1' : '2'));
       }
       return filtered;
     });
@@ -182,38 +171,42 @@ export default {
       editedItem.value = { ...item }; // Copy the item data to editedItem
       editDialog.value = true; // Open the edit dialog
     };
+
+    const handleFileUpload = (event) => {
+      editedItem.value.files = Array.from(event.target.files); // Convert FileList to an array
+    };
+
     const updateProduct = async () => {
-      const categoryId = editedItem.value.category_id === 'Men' ? '1' : '2'; // Assign category ID based on selection
+      const formData = new FormData();
+      formData.append('name', editedItem.value.name);
+      formData.append('description', editedItem.value.description);
+      formData.append('quantity', editedItem.value.quantity);
+      formData.append('price', editedItem.value.price);
+    if ( editedItem.value.category_id == 'men' ){
+      formData.append('category_id', '1');
+    }else{
+      formData.append('category_id', '2');
+    }
 
-  const formData = new FormData();
-  formData.append('name', editedItem.value.name);
-  formData.append('description', editedItem.value.description);
-  formData.append('quantity', editedItem.value.quantity);
-  formData.append('price', editedItem.value.price);
-  formData.append('category_id', categoryId);
+   
 
-  // Check if there are files to append
-  if (editedItem.value.files && editedItem.value.files.length > 0) {
-    editedItem.value.files.forEach(file => {
-      formData.append('images[]', file); // Use a different key name for the files
-    });
-  }
-  console.log(formData)
-  // Proceed with the Axios request as usual
-  try {
-    await axios.post(`http://192.168.1.5:8000/api/admin/products/${editedItem.value.id}/update-product`, formData, {
-      headers: {
-        Authorization: `Bearer ${userStore.user.token}`,
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    editDialog.value = false; // Close the edit dialog
-    fetchData(); // Refresh the list
-  } catch (error) {
-    console.error('Error updating product:', error);
-  }
-};
+      console.log('Form Data to Update:', formData); // Log the form data
 
+      try {
+        // Send a PUT request instead of POST to update the product
+        const response = await axios.post(`http://192.168.1.5:8000/api/admin/products/${editedItem.value.id}/update-product`, formData, {
+          headers: {
+            Authorization: `Bearer ${userStore.user.token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        console.log('Update Response:', response.data); // Log the response for debugging
+        editDialog.value = false; // Close the edit dialog
+        fetchData(); // Refresh the list
+      } catch (error) {
+        console.error('Error updating product:', error.response ? error.response.data : error.message);
+      }
+    };
 
     const openConfirmDelete = (item) => {
       itemToDelete.value = item;
@@ -224,7 +217,7 @@ export default {
       try {
         await axios.post(`http://192.168.1.5:8000/api/admin/products/${item.id}/delete-product`, {}, {
           headers: {
-            'Authorization': `Bearer ${userStore.user.token}`,
+            Authorization: `Bearer ${userStore.user.token}`,
             'Content-Type': 'application/json',
           },
         });
@@ -252,13 +245,14 @@ export default {
       updateProduct,
       openConfirmDelete,
       deleteItem,
+      handleFileUpload,
     };
   },
 };
 </script>
+
 <style scoped>
 .container {
-  
   margin-left: 55px;
 }
 
