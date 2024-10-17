@@ -34,8 +34,8 @@
   
         <!-- Actions for each item -->
         <template #[`item.actions`]="{ item }">
-          <v-btn v-if="item.status === 'Pending'" color="green" @click="openConfirmDialog(item, 'accept')">Accept</v-btn>
-          <v-btn v-if="item.status === 'Pending'" color="red" @click="openConfirmDialog(item, 'cancel')">Cancel</v-btn>
+          <v-btn v-if="item.status === 'pending'" color="green" @click="openConfirmDialog(item, 'accept')">Accept</v-btn>
+          <v-btn v-if="item.status === 'pending'" color="red" @click="openConfirmDialog(item, 'cancel')">Cancel</v-btn>
         </template>
       </v-data-table>
   
@@ -54,7 +54,9 @@
   </template>
   
   <script>
-  import { ref, computed } from 'vue';
+  import { ref, computed,onMounted } from 'vue';
+  import axios from 'axios';
+  import { useUserStore } from '@/stores/userstoe';
   
   export default {
     name: 'OrdersTable',
@@ -64,27 +66,21 @@
       const confirmDialog = ref(false);
       const actionType = ref('');
       const selectedOrder = ref(null);
-      
+      const userStore = useUserStore();
       const dialogTitle = ref('');
       const dialogText = ref('');
   
-      // Mock data for orders
-      const orders = ref([
-        { id: 1, customer: 'John Doe', product: 'Laptop', price: 1200, status: 'Pending' },
-        { id: 2, customer: 'Jane Smith', product: 'Smartphone', price: 800, status: 'Accepted' },
-        { id: 3, customer: 'Sam Green', product: 'Tablet', price: 500, status: 'Pending' },
-        { id: 4, customer: 'Sara Brown', product: 'Headphones', price: 150, status: 'Canceled' },
-        { id: 5, customer: 'Michael White', product: 'Smartwatch', price: 300, status: 'Pending' },
-      ]);
+
+      const orders = ref([]);
   
       // Table headers
       const headers = ref([
-        { text: 'Order ID', value: 'id' },
-        { text: 'Customer', value: 'customer' },
-        { text: 'Product', value: 'product' },
-        { text: 'Price (DZD)', value: 'price' },
-        { text: 'Status', value: 'status' },
-        { text: 'Actions', value: 'actions', sortable: false },
+        { text: 'Order ID', value: 'id' , title:'id'},
+        { text: 'Customer', value: 'customer' , title:'name'},
+        { text: 'Product', value: 'product' , title:'product'},
+        { text: 'Price (DZD)', value: 'price' , title:'price'},
+        { text: 'Status', value: 'status' , title:'status'},
+        { text: 'Actions', value: 'actions', sortable: false , title:'actions' },
       ]);
   
       // Filter options for status
@@ -95,10 +91,8 @@
         switch (status) {
           case 'Pending':
             return 'orange';
-          case 'Accepted':
+          case 'accepted':
             return 'green';
-          case 'Canceled':
-            return 'red';
           default:
             return 'grey';
         }
@@ -111,6 +105,31 @@
         }
         return orders.value.filter((order) => order.status === selectedStatus.value);
       });
+      
+      const fetchData= async()=>{
+        try{
+            const response = await axios.get('http://192.168.1.5:8000/api/admin/orders' , {
+                headers: {
+            Authorization: `Bearer ${userStore.user.token}`,
+            'Content-Type': 'application/json',
+          }
+            } )
+
+            const result = await response.data.data
+            orders.value=result
+            console.log(result)
+        }
+        catch(error){
+            console.log(error)
+        }
+
+
+      }
+      onMounted(() => {
+
+      fetchData();
+    });
+
   
       // Open confirmation dialog for accept/cancel action
       const openConfirmDialog = (order, action) => {
@@ -134,16 +153,42 @@
       };
   
       // Confirm the action (accept/cancel)
-      const confirmAction = () => {
-        if (selectedOrder.value && actionType.value) {
-          if (actionType.value === 'accept') {
-            selectedOrder.value.status = 'Accepted';
-          } else if (actionType.value === 'cancel') {
-            selectedOrder.value.status = 'Canceled';
+      const confirmAction = async () => {
+  if (selectedOrder.value && actionType.value) {
+    const orderId = selectedOrder.value.id; // Get the order ID
+
+    try {
+      if (actionType.value === 'accept') {
+        // API request to accept the order
+        await axios.post(`http://192.168.1.5:8000/api/admin/orders/${orderId}/update-order`, {}, {
+          headers: {
+            Authorization: `Bearer ${userStore.user.token}`,
+            'Content-Type': 'application/json',
           }
-          closeConfirmDialog(); // Close the dialog after action
-        }
-      };
+        });
+        selectedOrder.value.status = 'Accepted'; // Update the local status
+      } else if (actionType.value === 'cancel') {
+        // API request to cancel the order
+        await axios.post(`http://192.168.1.5:8000/api/admin/orders/${orderId}/delete`, {}, {
+          headers: {
+            Authorization: `Bearer ${userStore.user.token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+      }
+      
+      // Close the dialog after action
+      closeConfirmDialog(); 
+      fetchData()
+
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      // Handle any errors here (e.g., show a notification)
+    }
+  }
+};
+
   
       return {
         search,

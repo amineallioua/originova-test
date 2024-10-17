@@ -22,7 +22,7 @@
           single-line
         ></v-select>
         <v-btn
-          style="background-color: blue; color: white; width: 200px; position: absolute; right: 15px" to="/addProduct"
+          style="background-color: blue; color: white; max-width: 200px; min-width: 30px; position: absolute; right: 15px" to="/addProduct"
         >
           
             CREATE PRODUCT
@@ -128,9 +128,10 @@ export default {
     const filterOptions = ref(['All', 'Men', 'Women']);
     const userStore = useUserStore();
     const headers = [
-      { text: 'Product Name', value: 'name' },
-      { text: 'Category ID', value: 'category_id' },
-      { text: 'Actions', value: 'actions', sortable: false }
+      { text:'id', value:'id', title:'id' },
+      { text: 'Product Name', value: 'name', title:'name' },
+      { text: 'Category ID', value: 'category_id', },
+      { text: 'Actions', value: 'actions', sortable: false , title:'actions' }
     ];
 
     const items = ref([]);
@@ -257,8 +258,7 @@ export default {
 </script>
 <style scoped>
 .container {
-  padding-left: 90px;
-  padding-right: 90px;
+  
   margin-left: 55px;
 }
 

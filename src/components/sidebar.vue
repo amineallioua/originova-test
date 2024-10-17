@@ -4,6 +4,11 @@
     
       <ul class="list" >
         <div class="routContainer" >
+          <router-link to="/users" >
+      <li><v-icon>mdi-account</v-icon> <p>  users</p></li>
+    </router-link>
+    </div>
+        <div class="routContainer" >
           <router-link to="/home" >
       <li><v-icon>mdi-cart</v-icon> <p>  product</p></li>
     </router-link>
