@@ -24,7 +24,7 @@
   
   <script>
   import { ref } from 'vue';
-  import axios from 'axios';
+import apiClient from '@/services/axios'
   import { useRouter } from 'vue-router';
   
   export default {
@@ -43,9 +43,7 @@
       const submitForm = async() => {
         if (valid.value) {
           try{
-            const response = await axios.post('http://192.168.1.5:8000/api/admin/forgot-password',{
-                email:email.value
-            })
+            const response = await apiClient.post('/forgot-password',{email:email.value})
             const result = response.data
             console.log(result)
             router.push('/')

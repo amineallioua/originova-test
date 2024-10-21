@@ -78,14 +78,13 @@
 
 <script>
 import { ref } from 'vue';
-import axios from 'axios';
-import { useUserStore } from '@/stores/userstoe';
+import apiClient from '@/services/axios'
 
 
 export default {
   name: 'addProduct',
   setup() {
-    const userstore = useUserStore();
+    
  
 
     const name = ref('');
@@ -113,15 +112,14 @@ export default {
           formData.append('file[]', f); // Assuming the backend expects file array
         });
        
-        const response = await axios.post(
-          'http://192.168.1.5:8000/api/admin/create-product',
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${userstore.user.token}`,
+        const response = await apiClient.post(
+          '/create-product',
+          formData,{
+            headers:{
               'Content-Type': 'multipart/form-data',
-            },
+            }
           }
+         
         );
 
         // Log the response or handle it as necessary

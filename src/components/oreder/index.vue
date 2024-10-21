@@ -1,215 +1,175 @@
 <template>
-    <v-container>
-      <!-- Search bar -->
-      <v-text-field
-        v-model="search"
-        label="Search orders"
-        prepend-icon="mdi-magnify"
-        outlined
-        clearable
-      ></v-text-field>
-  
-      <!-- Filter options -->
-      <v-select
-        v-model="selectedStatus"
-        :items="statusOptions"
-        label="Filter by Status"
-        prepend-icon="mdi-filter"
-        outlined
-        clearable
-      ></v-select>
-  
-      <!-- Orders Table -->
-      <v-data-table
-        :headers="headers"
-        :items="filteredOrders"
-        :search="search"
-        item-value="id"
-        class="elevation-1"
-      >
-        <!-- Status chip -->
-        <template #[`item.status`]="{ item }">
-          <v-chip :color="getStatusColor(item.status)" dark>{{ item.status }}</v-chip>
-        </template>
-  
-        <!-- Actions for each item -->
-        <template #[`item.actions`]="{ item }">
-          <v-btn v-if="item.status === 'pending'" color="green" @click="openConfirmDialog(item, 'accept')">Accept</v-btn>
-          <v-btn v-if="item.status === 'pending'" color="red" @click="openConfirmDialog(item, 'cancel')">Cancel</v-btn>
-        </template>
-      </v-data-table>
-  
-      <!-- Confirmation Dialog -->
-      <v-dialog v-model="confirmDialog" max-width="400px">
-        <v-card>
-          <v-card-title class="headline">{{ dialogTitle }}</v-card-title>
-          <v-card-text>{{ dialogText }}</v-card-text>
-          <v-card-actions>
-            <v-btn color="green darken-1" text @click="confirmAction">Confirm</v-btn>
-            <v-btn color="grey" text @click="closeConfirmDialog">Cancel</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-    </v-container>
-  </template>
-  
-  <script>
-  import { ref, computed,onMounted } from 'vue';
-  import axios from 'axios';
-  import { useUserStore } from '@/stores/userstoe';
-  
-  export default {
-    name: 'OrdersTable',
-    setup() {
-      const search = ref('');
-      const selectedStatus = ref(null);
-      const confirmDialog = ref(false);
-      const actionType = ref('');
-      const selectedOrder = ref(null);
-      const userStore = useUserStore();
-      const dialogTitle = ref('');
-      const dialogText = ref('');
-  
+  <v-container>
+    <!-- Filter options -->
+    <v-select
+      v-model="selectedStatus"
+      :items="statusOptions"
+      label="Filter by Status"
+      variant="outlined"
+      hide-details
+      single-line
+      @change="updateStatusFilter"
+    ></v-select>
 
-      const orders = ref([]);
-  
-      // Table headers
-      const headers = ref([
-        { text: 'Order ID', value: 'id' , title:'id'},
-        { text: 'Customer', value: 'customer' , title:'name'},
-        { text: 'Product', value: 'product' , title:'product'},
-        { text: 'Price (DZD)', value: 'price' , title:'price'},
-        { text: 'Status', value: 'status' , title:'status'},
-        { text: 'Actions', value: 'actions', sortable: false , title:'actions' },
-      ]);
-  
-      // Filter options for status
-      const statusOptions = ref(['Pending', 'Accepted', 'Canceled']);
-  
-      // Function to get chip color based on order status
-      const getStatusColor = (status) => {
-        switch (status) {
-          case 'Pending':
-            return 'orange';
-          case 'accepted':
-            return 'green';
-          default:
-            return 'grey';
-        }
-      };
-  
-      // Computed property to filter orders by status
-      const filteredOrders = computed(() => {
-        if (!selectedStatus.value) {
-          return orders.value;
-        }
-        return orders.value.filter((order) => order.status === selectedStatus.value);
-      });
-      
-      const fetchData= async()=>{
-        try{
-            const response = await axios.get('http://192.168.1.5:8000/api/admin/orders' , {
-                headers: {
-            Authorization: `Bearer ${userStore.user.token}`,
-            'Content-Type': 'application/json',
-          }
-            } )
+    <!-- Orders Table -->
+    <v-data-table
+      :headers="headers"
+      :items="filteredOrders" 
+      item-value="id"
+      class="elevation-1"
+    >
+      <!-- Status chip -->
+      <template #[`item.actions`]="{ item }">
+        <v-chip :color="getStatusColor(item.status)" dark>{{ item.status }}</v-chip>
+        <v-btn @click="openDetailDialog(item)"> 
+          <v-icon>mdi-information</v-icon>
+        </v-btn>
+      </template>
+    </v-data-table>
 
-            const result = await response.data.data
-            orders.value=result
-            console.log(result)
-        }
-        catch(error){
-            console.log(error)
-        }
+    <!-- Details Dialog -->
+    <v-dialog v-model="detailDialog" max-width="600px">
+      <v-card>
+        <v-card-title class="headline">Order #{{ selectedOrder?.id }}</v-card-title>
+        <v-card-text>
+          name: {{ selectedOrder?.user.name }} <br>
+          email: {{ selectedOrder?.user.email }} <br>
+          Status: <v-chip :color="getStatusColor(selectedOrder?.status)" dark>{{ selectedOrder?.status }}</v-chip>
+          <br />
+          Product: {{ selectedOrder?.product }}
+          <br />
+          Price: {{ selectedOrder?.price }}
+        </v-card-text>
+        <v-card-actions v-if="selectedOrder?.status === 'pending'">
+          <v-btn color="green" @click="openConfirmDialog(selectedOrder, 'accept')">Accept</v-btn>
+          <v-btn color="red" @click="openConfirmDialog(selectedOrder, 'cancel')">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
+    <!-- Confirmation Dialog -->
+    <v-dialog v-model="confirmDialog" max-width="400px">
+      <v-card>
+        <v-card-title class="headline">{{ dialogTitle }}</v-card-title>
+        <v-card-text>{{ dialogText }}</v-card-text>
+        <v-card-actions>
+          <v-btn color="green darken-1" text @click="confirmAction">Confirm</v-btn>
+          <v-btn color="grey" text @click="closeConfirmDialog">Cancel</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
-      }
-      onMounted(() => {
+    <!-- Pagination Controls -->
+    <button
+      style="height: 40px; width: 40px; border-radius: 50%; margin-right: 10px; background-color: #e6fbff;"
+      @click="setPagination(2)"
+    >
+      <v-icon>mdi-chevron-left</v-icon>
+    </button>
+    <span>current page {{ pagination }} / {{ lastPage }}</span>
+    <button
+      style="height: 40px; width: 40px; border-radius: 50%; background-color: #e6fbff;"
+      @click="setPagination(1)"
+    >
+      <v-icon>mdi-chevron-right</v-icon>
+    </button>
+  </v-container>
+</template>
 
-      fetchData();
+<script>
+import { useOrderStore } from '@/stores/orders';
+import { ref, computed, watch, onMounted } from 'vue';
+
+export default {
+  name: 'OrDers',
+  setup() {
+    const orderStore = useOrderStore();
+
+    const headers = ref([
+      { text: 'Order ID', value: 'id' },
+      { text: 'Customer', value: 'customer' },
+      { text: 'Product', value: 'product' },
+      { text: 'Price (DZD)', value: 'price' },
+      { text: 'Status', value: 'status' },
+      { text: 'Actions', value: 'actions', sortable: false },
+    ]);
+
+    const confirmDialog = ref(false);
+    const detailDialog = ref(false);
+    const dialogTitle = ref('');
+    const dialogText = ref('');
+    const statusOptions = ref(['All', 'pending', 'accepted']);
+    const selectedStatus = computed({
+      get: () => orderStore.selectedStatus,
+      set: (value) => orderStore.setStatusFilter(value), // Update the status filter in the store
     });
 
-  
-      // Open confirmation dialog for accept/cancel action
-      const openConfirmDialog = (order, action) => {
-        selectedOrder.value = order;
-        actionType.value = action;
-        if (action === 'accept') {
-          dialogTitle.value = 'Accept Order';
-          dialogText.value = `Are you sure you want to accept order #${order.id}?`;
-        } else if (action === 'cancel') {
-          dialogTitle.value = 'Cancel Order';
-          dialogText.value = `Are you sure you want to cancel order #${order.id}?`;
-        }
-        confirmDialog.value = true;
-      };
-  
-      // Close the dialog
-      const closeConfirmDialog = () => {
-        confirmDialog.value = false;
-        selectedOrder.value = null;
-        actionType.value = '';
-      };
-  
-      // Confirm the action (accept/cancel)
-      const confirmAction = async () => {
-  if (selectedOrder.value && actionType.value) {
-    const orderId = selectedOrder.value.id; // Get the order ID
+    const openDetailDialog = (order) => {
+      orderStore.selectOrder(order);
+      detailDialog.value = true;
+    };
 
-    try {
-      if (actionType.value === 'accept') {
-        // API request to accept the order
-        await axios.post(`http://192.168.1.5:8000/api/admin/orders/${orderId}/update-order`, {}, {
-          headers: {
-            Authorization: `Bearer ${userStore.user.token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        selectedOrder.value.status = 'Accepted'; // Update the local status
-      } else if (actionType.value === 'cancel') {
-        // API request to cancel the order
-        await axios.post(`http://192.168.1.5:8000/api/admin/orders/${orderId}/delete`, {}, {
-          headers: {
-            Authorization: `Bearer ${userStore.user.token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        
+    const closeDetailDialog = () => {
+      detailDialog.value = false;
+    };
+
+    const openConfirmDialog = (order, action) => {
+      orderStore.selectOrder(order);
+      dialogTitle.value = action === 'accept' ? 'Accept Order' : 'Cancel Order';
+      dialogText.value = `Are you sure you want to ${action} order #${order.id}?`;
+      confirmDialog.value = true;
+    };
+
+    const confirmAction = async () => {
+      const action = dialogTitle.value.includes('Accept') ? 'accept' : 'cancel';
+      await orderStore.updateOrderStatus(orderStore.selectedOrder.id, action);
+      closeDetailDialog();
+      confirmDialog.value = false;
+    };
+
+    const closeConfirmDialog = () => {
+      confirmDialog.value = false;
+    };
+
+    const getStatusColor = (status) => {
+      switch (status) {
+        case 'pending':
+          return 'orange';
+        case 'accepted':
+          return 'green';
+        default:
+          return 'grey';
       }
-      
-      // Close the dialog after action
-      closeConfirmDialog(); 
-      fetchData()
+    };
 
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      // Handle any errors here (e.g., show a notification)
-    }
-  }
+    watch(() => orderStore.pagination, () => {
+      orderStore.fetchOrders();
+    });
+
+    onMounted(() => {
+      orderStore.fetchOrders();
+    });
+
+    return {
+      headers,
+      detailDialog,
+      confirmDialog,
+      dialogTitle,
+      dialogText,
+      openDetailDialog,
+      closeDetailDialog,
+      openConfirmDialog,
+      confirmAction,
+      closeConfirmDialog,
+      getStatusColor,
+      pagination: computed(() => orderStore.pagination),
+      lastPage: computed(() => orderStore.lastPage),
+      filteredOrders: computed(() => orderStore.filteredOrders),
+      selectedOrder: computed(() => orderStore.selectedOrder),
+      setPagination: orderStore.setPagination,
+      statusOptions,
+      selectedStatus,
+    };
+  },
 };
-
-  
-      return {
-        search,
-        selectedStatus,
-        orders,
-        headers,
-        statusOptions,
-        filteredOrders,
-        getStatusColor,
-        openConfirmDialog,
-        confirmDialog,
-        dialogTitle,
-        dialogText,
-        confirmAction,
-        closeConfirmDialog,
-      };
-    },
-  };
-  </script>
-  
-  <style scoped>
-  /* Add any necessary styles here */
-  </style>
-  
+</script>

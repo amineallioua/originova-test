@@ -11,6 +11,7 @@
     "@mdi/font": "5.9.55",
     "axios": "^1.7.7",
     "core-js": "^3.8.3",
+    "eventbus": "^0.0.3",
     "pinia": "^2.2.4",
     "pinia-plugin-persistedstate": "^4.1.1",
     "pusher": "^5.2.0",

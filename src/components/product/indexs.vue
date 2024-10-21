@@ -3,7 +3,8 @@
     <v-card flat>
       <template v-slot:text>
         <v-text-field
-          v-model="search"
+          @input="searchdebounce"
+          v-model="store.search"
           label="Search"
           prepend-inner-icon="mdi-magnify"
           variant="outlined"
@@ -28,10 +29,10 @@
           CREATE PRODUCT
         </v-btn>
       </div>
+
       <v-data-table
         :headers="headers"
-        :items="filtereditems"
-        :search="search"
+        :items="filteredItems"
         item-value="id"
       >
         <template #[`item.actions`]="{ item }">
@@ -94,7 +95,6 @@
               outlined
               required
             ></v-select>
-        
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
@@ -104,29 +104,36 @@
         </v-card>
       </v-dialog>
     </v-card>
+
+    <v-btn style="height: 40px; width: 40px; border-radius: 50%; margin-right: 10px; background-color :#e6fbff;" 
+           @click="paginationn(1)">
+      <v-icon>mdi-chevron-left</v-icon>
+    </v-btn>
+    <span>Current page {{ store.pagination }} / {{ store.lastPage }}</span>
+    <v-btn style="height: 40px; width: 40px; border-radius: 50%; background-color :#e6fbff;" 
+           @click="paginationn(2)">
+      <v-icon>mdi-chevron-right</v-icon>
+    </v-btn>
   </div>
 </template>
 
 <script>
-import axios from 'axios';
 import { ref, computed } from 'vue';
-import { useUserStore } from '@/stores/userstoe';
+import { debounce } from 'lodash';
+import useProductStore from '@/stores/product'; // Import the Pinia store
 
 export default {
   name: 'IndexS',
   setup() {
-    const search = ref('');
+    const store = useProductStore(); // Register the store
     const selectedFilter = ref('All');
     const filterOptions = ref(['All', 'Men', 'Women']);
-    const userStore = useUserStore();
     const headers = [
       { text: 'ID', value: 'id' },
       { text: 'Product Name', value: 'name' },
       { text: 'Category ID', value: 'category_id' },
       { text: 'Actions', value: 'actions', sortable: false }
     ];
-
-    const items = ref([]);
     const confirmDeleteDialog = ref(false);
     const itemToDelete = ref(null);
     const editDialog = ref(false);
@@ -137,75 +144,36 @@ export default {
       quantity: null,
       price: null,
       category_id: null,
-
     });
 
-    const filtereditems = computed(() => {
-      let filtered = items.value;
-      if (search.value) {
-        filtered = filtered.filter(item =>
-          item.name.toLowerCase().includes(search.value.toLowerCase())
-        );
-      }
-      if (selectedFilter.value !== 'All') {
-        filtered = filtered.filter(item => item.category_id === (selectedFilter.value === 'women' ? '1' : '2'));
-      }
-      return filtered;
-    });
+    // Computed property for filtered items
+    const filteredItems = computed(() => store.filteredItems(selectedFilter.value));
 
-    const fetchData = async () => {
-      try {
-        const response = await axios.get('http://192.168.1.5:8000/api/admin/products', {
-          headers: {
-            Authorization: `Bearer ${userStore.user.token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        items.value = response.data.data;
-      } catch (error) {
-        console.error(error);
+    // Function to debounce search
+    const searchdebounce = debounce(() => store.fetchData(), 1000);
+
+    // Pagination control
+    const paginationn = (action) => {
+      if (store.pagination < store.lastPage && action == 2) {
+        store.setPagination(store.pagination + 1);
       }
+      if (action == 1 && store.pagination > 1) {
+        store.setPagination(store.pagination - 1);
+      }
+      store.fetchData();
     };
+
+    // Fetch initial data
+    store.fetchData();
 
     const editItem = (item) => {
-      editedItem.value = { ...item }; // Copy the item data to editedItem
-      editDialog.value = true; // Open the edit dialog
-    };
-
-    const handleFileUpload = (event) => {
-      editedItem.value.files = Array.from(event.target.files); // Convert FileList to an array
+      editedItem.value = { ...item };
+      editDialog.value = true;
     };
 
     const updateProduct = async () => {
-      const formData = new FormData();
-      formData.append('name', editedItem.value.name);
-      formData.append('description', editedItem.value.description);
-      formData.append('quantity', editedItem.value.quantity);
-      formData.append('price', editedItem.value.price);
-    if ( editedItem.value.category_id == 'men' ){
-      formData.append('category_id', '1');
-    }else{
-      formData.append('category_id', '2');
-    }
-
-   
-
-      console.log('Form Data to Update:', formData); // Log the form data
-
-      try {
-        // Send a PUT request instead of POST to update the product
-        const response = await axios.post(`http://192.168.1.5:8000/api/admin/products/${editedItem.value.id}/update-product`, formData, {
-          headers: {
-            Authorization: `Bearer ${userStore.user.token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        console.log('Update Response:', response.data); // Log the response for debugging
-        editDialog.value = false; // Close the edit dialog
-        fetchData(); // Refresh the list
-      } catch (error) {
-        console.error('Error updating product:', error.response ? error.response.data : error.message);
-      }
+      await store.updateProduct(editedItem.value);
+      editDialog.value = false; // Close dialog after update
     };
 
     const openConfirmDelete = (item) => {
@@ -214,38 +182,26 @@ export default {
     };
 
     const deleteItem = async (item) => {
-      try {
-        await axios.post(`http://192.168.1.5:8000/api/admin/products/${item.id}/delete-product`, {}, {
-          headers: {
-            Authorization: `Bearer ${userStore.user.token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        confirmDeleteDialog.value = false; // Close the dialog
-        fetchData();
-      } catch (error) {
-        console.error('Error deleting item:', error);
-      }
+      await store.deleteItem(item);
+      confirmDeleteDialog.value = false; // Close the dialog after deletion
     };
 
-    fetchData();
-
     return {
-      search,
+      store,
       selectedFilter,
       filterOptions,
       headers,
-      filtereditems,
       confirmDeleteDialog,
       itemToDelete,
       editDialog,
       editedItem,
-      fetchData,
+      filteredItems,
+      paginationn,
+      searchdebounce,
       editItem,
       updateProduct,
       openConfirmDelete,
       deleteItem,
-      handleFileUpload,
     };
   },
 };
@@ -271,3 +227,4 @@ a {
   color: white;
 }
 </style>
+  

@@ -2,28 +2,32 @@
     <v-container>
       <!-- Search bar -->
       <v-text-field
-        v-model="search"
-        label="Search users"
-        prepend-icon="mdi-magnify"
-        outlined
-        clearable
+      @input="searchdebounce"
+          v-model="search"
+          label="Search"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          hide-details
+          single-line
       ></v-text-field>
-  
+      
       <!-- Filter options -->
       <v-select
         v-model="selectedStatus"
         :items="statusOptions"
         label="Filter by Status"
-        prepend-icon="mdi-filter"
-        outlined
-        clearable
+          variant="outlined"
+          hide-details
+          single-line
       ></v-select>
+     
+    
+
   
       <!-- users Table -->
       <v-data-table
         :headers="headers"
-        :items="filteredusers"
-        :search="search"
+        :items="filteredUsers"
         item-value="id"
         class="elevation-1"
       >
@@ -62,7 +66,8 @@
 </template>
 
       </v-data-table>
-  
+     
+      
       <!-- Confirmation Dialog -->
       <v-dialog v-model="confirmDialog" max-width="400px">
         <v-card>
@@ -74,154 +79,139 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+      <button style="height: 40px; width: 40px; border-radius: 50%; margin-right: 10px; background-color :#e6fbff; " 
+    @click="paginationn(2)"
+    > <v-icon>mdi-chevron-left</v-icon></button>
+    <span>curent page {{ pagination }} / {{ last }} </span>
+  
+    <button style="height: 40px; width: 40px; border-radius: 50%;  background-color :#e6fbff; "
+        @click="paginationn(1)"
+    ><v-icon>mdi-chevron-right</v-icon></button>
     </v-container>
   </template>
   
   <script>
-  import { ref, computed, onMounted } from 'vue';
-  import { useUserStore } from '@/stores/userstoe'; // Corrected the typo in the import
+  import { ref, computed, onMounted, watch } from 'vue'; 
+import { useUserStoree } from '@/stores/users'; 
+import eventBus from '@/eventBus'; 
+import { debounce } from 'lodash'; 
 
-
-  import axios from 'axios';
-  import Pusher from 'pusher-js';
-Pusher.logToConsole = true;
-  
   export default {
-    name: 'usersPage',
+    name:'inDex',
     setup() {
-      const search = ref('');
-      const selectedStatus = ref(null);
-      const confirmDialog = ref(false);
-      const actionType = ref('');
-      const selectedOrder = ref(null);
-      const userStore = useUserStore();
-      const dialogTitle = ref('');
-      const dialogText = ref('');
-      const pusher = new Pusher('1a9e1b88fcbdd25d7a99', {
-  cluster: 'eu',
-  // Add any other options you need
-});
-const channel = pusher.subscribe('originova-channel');
-      
-  
-      const users = ref([]);
-  
-      const headers = ref([
-  { text: 'User ID', value: 'id' },
-  { text: 'Name', value: 'name' },
-  { text: 'Email', value: 'email' },
-  { text: 'Role', value: 'role.name' }, // Accessing the nested role name
-  { text: 'Status', value: 'status' },
-  { text: 'Actions', value: 'actions', sortable: false }, // For buttons like "block" or "activate"
-]);
+  const userStore = useUserStoree();
+  const search = ref('');
+  const selectedStatus = ref('All');
+  const confirmDialog = ref(false);
+  const actionType = ref('');
+  const selectedOrder = ref(null);
 
+  const dialogTitle = ref('');
+  const dialogText = ref('');
+  const pagination = computed(() => userStore.pagination);
+  const last = computed(() => userStore.lastPage);
   
-      const statusOptions = ref(['active', 'blocked']);
-  
-      const getStatusColor = (status) => {
-        switch (status) {
-          case 'blocked':
-            return 'red';
-          case 'active':
-            return 'green';
-          default:
-            return 'grey';
-        }
-      };
-      const subscribeToNotifications =  () => {
-  
-  channel.bind('user-logout', function(data) {
-    
-    alert("The account is blocked"); 
-    console.log(data); 
+  const headers = ref([
+    { text: 'User ID', value: 'id' },
+    { text: 'Name', value: 'name' },
+    { text: 'Email', value: 'email' },
+    { text: 'Role', value: 'role.name' },
+    { text: 'Status', value: 'status' },
+    { text: 'Actions', value: 'actions', sortable: false },
+  ]);
+  const alert = ()=>{
+    eventBus.emit( 'alert')
+  }
+
+  const statusOptions = ref(['All', 'active', 'blocked']);
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'blocked':
+        return 'red';
+      case 'active':
+        return 'green';
+      default:
+        return 'grey';
+    }
+  };
+
+  const paginationn = (action) => {
+    userStore.setPagination(action);
+  };
+
+  const filteredUsers = computed(() => userStore.filteredUsers(selectedStatus.value));
+
+  watch([pagination], () => {
+    userStore.fetchUsers(search.value);
   });
+
+  const fetchdata = async () => {
+    await userStore.fetchUsers(search.value);
+  };
+
+  const searchdebounce = debounce(fetchdata, 1000);
+
+  const openConfirmDialog = (user, action) => {
+    selectedOrder.value = user;
+    actionType.value = action;
+    dialogTitle.value = action === 'active' ? 'Activate User' : 'Block User';
+    dialogText.value = `Are you sure you want to ${action} user ${user.name}?`;
+    confirmDialog.value = true;
+  };
+
+  const closeConfirmDialog = () => {
+    confirmDialog.value = false;
+    selectedOrder.value = null;
+    actionType.value = '';
+  };
+
+  const confirmAction = async () => {
+    if (selectedOrder.value && actionType.value) {
+      const userId = selectedOrder.value.id;
+      const action = actionType.value === 'active' ? 'active' : 'block';
+
+      try {
+        await userStore.updateUserStatus(userId, action);
+        fetchdata();
+        closeConfirmDialog();
+      } catch (error) {
+        console.error('Error updating user status:', error);
+      }
+    }
+  };
+
+  onMounted(() => {
+    fetchdata();
+    alert();
+  });
+
+  return {
+    searchdebounce,
+    search,
+    selectedStatus,
+    users: computed(() => userStore.users),
+    headers,
+    statusOptions,
+    filteredUsers,
+    getStatusColor,
+    openConfirmDialog,
+    confirmDialog,
+    dialogTitle,
+    dialogText,
+    confirmAction,
+    closeConfirmDialog,
+    last,
+    pagination,
+    fetchdata,
+    paginationn,
+  };
 }
 
-  
-      const filteredusers = computed(() => {
-        if (!selectedStatus.value) {
-          return users.value;
-        }
-        return users.value.filter((order) => order.status === selectedStatus.value);
-      });
-  
-      const fetchdata = async () => {
-        try {
-          const response = await axios.get(`http://192.168.1.5:8000/api/admin/users/?page=3`,   {
-            headers: {
-                Authorization: `Bearer ${userStore.user.token}`, 
-                'Content-Type': 'application/json',},})
-          const result = response.data.data; 
-         users.value =result
-        } catch (error) {
-          console.log(error);
-        }
-      };
-  
-      const openConfirmDialog = (order, action) => {
-        selectedOrder.value = order;
-        actionType.value = action;
-        dialogTitle.value = action === 'active' ? 'Activate User' : 'Block User';
-        dialogText.value = `Are you sure you want to ${action} user ${order.customer}?`;
-        confirmDialog.value = true;
-      };
-  
-      const closeConfirmDialog = () => {
-        confirmDialog.value = false;
-        selectedOrder.value = null;
-        actionType.value = '';
-      };
-  
-      const confirmAction = async () => {
-  if (selectedOrder.value && actionType.value) {
-    const userId = selectedOrder.value.id; // Assuming the user object has an 'id' field
-    const action = actionType.value === 'active' ? 'active' : 'block'; // Determine the action
-  
-   
-    try {
-      // Make the API request to block or activate the user
-      await axios.post(`http://192.168.1.5:8000/api/admin/users/${userId}/${action}`, {}, {
-        headers: {
-          Authorization: `Bearer ${userStore.user.token}`, // Include the token in the headers
-          'Content-Type': 'application/json',
-        },
-      });
-      subscribeToNotifications();
-     fetchdata();
-
-    
-      closeConfirmDialog();
-    } catch (error) {
-      console.error('Error updating user status:', error);
-      // Optionally, you could show an error message to the user here
-    }
   }
-};
+  
+</script>
 
-  
-      // Call fetchdata on component mount
-      onMounted(() => {
-        fetchdata();
-      });
-  
-      return {
-        search,
-        selectedStatus,
-        users,
-        headers,
-        statusOptions,
-        filteredusers,
-        getStatusColor,
-        openConfirmDialog,
-        confirmDialog,
-        dialogTitle,
-        dialogText,
-        confirmAction,
-        closeConfirmDialog,
-      };
-    },
-  };
-  </script>
   
   <style scoped>
   /* Add any necessary styles here */

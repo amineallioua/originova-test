@@ -37,7 +37,7 @@
   <script>
   import { ref, onMounted } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import axios from 'axios';
+  import apiClient from '@/services/axios';
   
   export default {
     name: 'PasswordReset',
@@ -53,7 +53,7 @@
   
       const passwordRules = [
         v => !!v || 'Password is required',
-        v => v.length >= 6 || 'Password must be at least 6 characters',
+        v => v.length >= 10 || 'Password must be at least 10 characters',
       ];
   
       const confirmPasswordRules = [
@@ -80,11 +80,7 @@
           };
   
           try {
-            const response = await axios.post('http://192.168.1.5:8000/api/admin/password-reset', payload, {
-              headers: {
-                'Content-Type': 'application/json', // Add Content-Type header if needed
-              },
-            });
+            const response = await apiClient.post('/password-reset', payload);
             const result = response.data;
             console.log(result);
   
