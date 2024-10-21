@@ -38,11 +38,10 @@
     </v-form>
   </v-container>
 </template>
-
+ 
 <script>
-import { ref } from 'vue';
-import apiClient from '@/services/axios';
-
+import {ref} from 'vue'
+import { useUserStore } from '@/stores/userstoe'; 
 export default {
   name: 'reGister',
   setup() {
@@ -53,7 +52,8 @@ export default {
       password: '',
       password_confirmation: '',
     });
-
+    
+    const userStore = useUserStore();
     const nameRules = [
       v => !!v || 'Name is required',
       v => (v && v.length <= 20) || 'Name must be less than 20 characters',
@@ -78,19 +78,7 @@ export default {
       // Validate form
       if (formdata.value.name && formdata.value.email && formdata.value.password && formdata.value.password_confirmation) {
         const { name, email, password, password_confirmation } = formdata.value; // Extract only necessary fields
-        console.log('Submitting form with data:', formdata.value);
-        try {
-          const response = await apiClient.post('/register', {
-            name,
-            email,
-            password,
-            password_confirmation
-          });
-          const result = response.data;
-          console.log('Registration successful:', result);
-        } catch (error) {
-          console.log('Error during registration:', error);
-        }
+        userStore.register(name, email, password, password_confirmation )
       } else {
         console.log('Form is invalid, please fill out all required fields.');
       }

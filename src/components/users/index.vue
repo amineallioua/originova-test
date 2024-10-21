@@ -93,7 +93,6 @@
   <script>
   import { ref, computed, onMounted, watch } from 'vue'; 
 import { useUserStoree } from '@/stores/users'; 
-import eventBus from '@/eventBus'; 
 import { debounce } from 'lodash'; 
 
   export default {
@@ -119,9 +118,7 @@ import { debounce } from 'lodash';
     { text: 'Status', value: 'status' },
     { text: 'Actions', value: 'actions', sortable: false },
   ]);
-  const alert = ()=>{
-    eventBus.emit( 'alert')
-  }
+
 
   const statusOptions = ref(['All', 'active', 'blocked']);
 
@@ -183,7 +180,7 @@ import { debounce } from 'lodash';
 
   onMounted(() => {
     fetchdata();
-    alert();
+    
   });
 
   return {

@@ -36,14 +36,14 @@
   
   <script>
   import { ref, onMounted } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
-  import apiClient from '@/services/axios';
+  import { useRoute, } from 'vue-router';
+  import { useUserStore } from '@/stores/userstoe'; 
   
   export default {
     name: 'PasswordReset',
     setup() {
       const route = useRoute();
-      const router = useRouter(); // Access the router
+      const userStore = useUserStore();
       const valid = ref(false);
       const emailL = ref(''); // Holds the email value
       const password = ref('');
@@ -78,21 +78,9 @@
             password: password.value,
             password_confirmation: passwordConfirmation.value,
           };
+          userStore.reset(payload)
   
-          try {
-            const response = await apiClient.post('/password-reset', payload);
-            const result = response.data;
-            console.log(result);
-  
-            // Show dialog and redirect after 5 seconds
-            dialog.value = true; // Show the dialog
-            setTimeout(() => {
-              dialog.value = false; // Close the dialog
-              router.push('/'); // Redirect to home
-            }, 2000);
-          } catch (error) {
-            console.log(error.response.data); // Log error response for better debugging
-          }
+          dialog.value = true; 
         }
       };
   

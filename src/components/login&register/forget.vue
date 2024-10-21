@@ -24,15 +24,15 @@
   
   <script>
   import { ref } from 'vue';
-import apiClient from '@/services/axios'
-  import { useRouter } from 'vue-router';
+import {useUserStore} from  '@/stores/userstoe'
   
   export default {
     name: 'EmailForm',
     setup() {
       const valid = ref(false);
       const email = ref('');
-      const router=useRouter()
+      const userStore = useUserStore();
+  
 
   
       const emailRules = [
@@ -42,17 +42,7 @@ import apiClient from '@/services/axios'
   
       const submitForm = async() => {
         if (valid.value) {
-          try{
-            const response = await apiClient.post('/forgot-password',{email:email.value})
-            const result = response.data
-            console.log(result)
-            router.push('/')
-
-
-
-          }catch(error){
-            console.log(error)
-          }
+          userStore.forget(email.value)
         }
       };
   
