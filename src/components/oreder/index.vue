@@ -36,7 +36,13 @@
           email: {{ selectedOrder?.user.email }} <br>
           Status: <v-chip :color="getStatusColor(selectedOrder?.status)" dark>{{ selectedOrder?.status }}</v-chip>
           <br />
-          Product: {{ selectedOrder?.product }}
+          <table  class="custom-table">
+            <tr><th>product</th> <th>quantity</th><th>price</th> </tr>
+            <tr
+            v-for="product in selectedOrder?.products" :key="product.name"
+            ><td>{{ product.name }}  </td> <td>{{product.quantity}} </td>  <td>{{ product.price }}</td>  </tr>
+          </table>
+          
           <br />
           Price: {{ selectedOrder?.price }}
         </v-card-text>
@@ -106,6 +112,7 @@ export default {
 
     const openDetailDialog = (order) => {
       orderStore.selectOrder(order);
+      console.log(order)
       detailDialog.value = true;
     };
 
@@ -173,3 +180,28 @@ export default {
   },
 };
 </script>
+<style scoped>
+.custom-table {
+  width: 100%;
+  border-spacing: 15px; /* Adds space between table cells */
+  background-color: #f0f0f0; /* Table background color */
+  border-collapse: separate;
+  border-radius:10px;
+  height: 100px;
+  overflow: scroll;
+}
+
+.custom-table th, .custom-table td {
+  padding: 10px;
+  background-color: #87CEEB; /* Background color for cells */
+  border-radius:10px;
+  text-align: center;
+  font-size: 16px;
+  color: #fff; /* Text color */
+}
+
+.custom-table th {
+  font-weight: bold;
+  background-color: #4682B4; /* Different color for header */
+}
+</style>
