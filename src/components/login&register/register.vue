@@ -45,8 +45,9 @@ import { useUserStore } from '@/stores/userstoe';
 export default {
   name: 'reGister',
   setup() {
+    const valid= ref(false) // Move this inside formdata
     const formdata = ref({
-      valid: false, // Move this inside formdata
+    
       name: '',
       email: '',
       password: '',
@@ -66,7 +67,7 @@ export default {
 
     const passwordRules = [
       v => !!v || 'Password is required',
-      v => (v && v.length >= 9) || 'Password must be at least 10 characters',
+      v => (v && v.length >= 10) || 'Password must be at least 10 characters',
     ];
 
     const confirmPasswordRules = [
@@ -76,7 +77,7 @@ export default {
 
     const submitForm = async () => {
       // Validate form
-      if (formdata.value.name && formdata.value.email && formdata.value.password && formdata.value.password_confirmation) {
+      if (valid.value) {
         const { name, email, password, password_confirmation } = formdata.value; // Extract only necessary fields
         userStore.register(name, email, password, password_confirmation )
       } else {
@@ -91,6 +92,7 @@ export default {
       passwordRules,
       confirmPasswordRules,
       submitForm,
+      valid,
     };
   },
 };

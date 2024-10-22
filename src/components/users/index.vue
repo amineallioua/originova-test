@@ -64,6 +64,16 @@
     Admin users cannot be modified
   </v-chip>
 </template>
+<template  v-slot:bottom >
+  <v-pagination
+      v-model="pagination"
+      :length="last"
+     
+   >
+
+   </v-pagination>
+  
+</template>
 
       </v-data-table>
      
@@ -79,14 +89,7 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
-      <button style="height: 40px; width: 40px; border-radius: 50%; margin-right: 10px; background-color :#e6fbff; " 
-    @click="paginationn(2)"
-    > <v-icon>mdi-chevron-left</v-icon></button>
-    <span>curent page {{ pagination }} / {{ last }} </span>
-  
-    <button style="height: 40px; width: 40px; border-radius: 50%;  background-color :#e6fbff; "
-        @click="paginationn(1)"
-    ><v-icon>mdi-chevron-right</v-icon></button>
+ 
     </v-container>
   </template>
   
@@ -107,8 +110,8 @@ import { debounce } from 'lodash';
 
   const dialogTitle = ref('');
   const dialogText = ref('');
-  const pagination = computed(() => userStore.pagination);
-  const last = computed(() => userStore.lastPage);
+  const pagination = ref(1) ;
+  const last = ref(computed(() => userStore.lastPage)) 
   
   const headers = ref([
     { text: 'User ID', value: 'id' },
@@ -133,13 +136,11 @@ import { debounce } from 'lodash';
     }
   };
 
-  const paginationn = (action) => {
-    userStore.setPagination(action);
-  };
 
   const filteredUsers = computed(() => userStore.filteredUsers(selectedStatus.value));
 
-  watch([pagination], () => {
+  watch(pagination, () => {
+    userStore.setPagination(pagination)
     userStore.fetchUsers(search.value);
   });
 
@@ -201,7 +202,7 @@ import { debounce } from 'lodash';
     last,
     pagination,
     fetchdata,
-    paginationn,
+    
   };
 }
 

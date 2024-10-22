@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia';
-import apiClient from '@/services/axios'; // Ensure the API client is imported
+import axios from '@/services/axios'; // Ensure the API client is imported
 import router from '@/router';
 const useProductStore = defineStore('product', {
   state: () => ({
     items: [],
     lastPage: null,
-    pagination: 1,
+    pagination: null,
     search: '',
   }),
   
@@ -18,7 +18,7 @@ const useProductStore = defineStore('product', {
         url = `/products/?page=${this.pagination}&search=${this.search}`;
       }
       try {
-        const response = await apiClient.get(url);
+        const response = await axios.get(url);
         this.items = response.data.data;
         this.lastPage = response.data.pagination.lastPage;
       } catch (error) {
@@ -47,7 +47,7 @@ const useProductStore = defineStore('product', {
       formData.append('category_id', editedItem.category_id === 'men' ? '1' : '2');
 
       try {
-        const response = await apiClient.post(`/products/${editedItem.id}/update-product`, formData);
+        const response = await axios.post(`/products/${editedItem.id}/update-product`, formData);
         console.log('Update Response:', response.data);
         await this.fetchData(); // Refresh the list after updating
       } catch (error) {
@@ -57,7 +57,7 @@ const useProductStore = defineStore('product', {
 
     async deleteItem(item) {
       try {
-        await apiClient.post(`/products/${item.id}/delete-product`);
+        await axios.post(`/products/${item.id}/delete-product`);
         await this.fetchData(); // Refresh the list after deleting
       } catch (error) {
         console.error('Error deleting item:', error);
@@ -67,6 +67,7 @@ const useProductStore = defineStore('product', {
     // You can add more actions like pagination, search, etc. here
     setPagination(page) {
       this.pagination = page;
+      this.fetchData()
     },
 
     setSearch(query) {

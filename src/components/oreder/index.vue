@@ -17,7 +17,7 @@
       :items="filteredOrders" 
       item-value="id"
       class="elevation-1"
-    >
+    > 
       <!-- Status chip -->
       <template #[`item.actions`]="{ item }">
         <v-chip :color="getStatusColor(item.status)" dark>{{ item.status }}</v-chip>
@@ -25,7 +25,18 @@
           <v-icon>mdi-information</v-icon>
         </v-btn>
       </template>
+      <template  v-slot:bottom >
+  <v-pagination
+      v-model="pagination"
+      :length="lastPage"
+      :total-visible="3"
+   >
+
+   </v-pagination>
+  
+</template>
     </v-data-table>
+ 
 
     <!-- Details Dialog -->
     <v-dialog v-model="detailDialog" max-width="600px">
@@ -45,6 +56,7 @@
           
           <br />
           Price: {{ selectedOrder?.price }}
+          <v-btn color="red" @click="openConfirmDialog( selectedOrder, 'cancel')">Cancel</v-btn>
         </v-card-text>
         <v-card-actions v-if="selectedOrder?.status === 'pending'">
           <v-btn color="green" @click="openConfirmDialog(selectedOrder, 'accept')">Accept</v-btn>
@@ -66,19 +78,7 @@
     </v-dialog>
 
     <!-- Pagination Controls -->
-    <button
-      style="height: 40px; width: 40px; border-radius: 50%; margin-right: 10px; background-color: #e6fbff;"
-      @click="setPagination(2)"
-    >
-      <v-icon>mdi-chevron-left</v-icon>
-    </button>
-    <span>current page {{ pagination }} / {{ lastPage }}</span>
-    <button
-      style="height: 40px; width: 40px; border-radius: 50%; background-color: #e6fbff;"
-      @click="setPagination(1)"
-    >
-      <v-icon>mdi-chevron-right</v-icon>
-    </button>
+  
   </v-container>
 </template>
 
@@ -90,7 +90,7 @@ export default {
   name: 'OrDers',
   setup() {
     const orderStore = useOrderStore();
-
+    const pagination = ref(1)
     const headers = ref([
       { text: 'Order ID', value: 'id' },
       { text: 'Customer', value: 'customer' },
@@ -149,8 +149,8 @@ export default {
       }
     };
 
-    watch(() => orderStore.pagination, () => {
-      orderStore.fetchOrders();
+    watch(() => pagination.value , () => {
+      orderStore.setPagination(pagination.value)
     });
 
     onMounted(() => {
@@ -169,7 +169,7 @@ export default {
       confirmAction,
       closeConfirmDialog,
       getStatusColor,
-      pagination: computed(() => orderStore.pagination),
+      pagination,
       lastPage: computed(() => orderStore.lastPage),
       filteredOrders: computed(() => orderStore.filteredOrders),
       selectedOrder: computed(() => orderStore.selectedOrder),

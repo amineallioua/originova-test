@@ -39,7 +39,18 @@
           <v-btn @click="editItem(item)">Edit</v-btn>
           <v-btn color="error" @click="openConfirmDelete(item)">Delete</v-btn>
         </template>
+        <template  v-slot:bottom >
+  <v-pagination
+      v-model="pagination"
+      :length="store.lastPage"
+      :total-visible="3"
+   >
+
+   </v-pagination>
+  
+</template>
       </v-data-table>
+      
 
       <!-- Delete Confirmation Dialog -->
       <v-dialog v-model="confirmDeleteDialog" max-width="290">
@@ -105,20 +116,12 @@
       </v-dialog>
     </v-card>
 
-    <v-btn style="height: 40px; width: 40px; border-radius: 50%; margin-right: 10px; background-color :#e6fbff;" 
-           @click="paginationn(1)">
-      <v-icon>mdi-chevron-left</v-icon>
-    </v-btn>
-    <span>Current page {{ store.pagination }} / {{ store.lastPage }}</span>
-    <v-btn style="height: 40px; width: 40px; border-radius: 50%; background-color :#e6fbff;" 
-           @click="paginationn(2)">
-      <v-icon>mdi-chevron-right</v-icon>
-    </v-btn>
+ 
   </div>
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { debounce } from 'lodash';
 import useProductStore from '@/stores/product'; // Import the Pinia store
 
@@ -145,7 +148,7 @@ export default {
       price: null,
       category_id: null,
     });
-
+    const pagination = ref(1)
     // Computed property for filtered items
     const filteredItems = computed(() => store.filteredItems(selectedFilter.value));
 
@@ -153,15 +156,7 @@ export default {
     const searchdebounce = debounce(() => store.fetchData(), 1000);
 
     // Pagination control
-    const paginationn = (action) => {
-      if (store.pagination < store.lastPage && action == 2) {
-        store.setPagination(store.pagination + 1);
-      }
-      if (action == 1 && store.pagination > 1) {
-        store.setPagination(store.pagination - 1);
-      }
-      store.fetchData();
-    };
+
 
     // Fetch initial data
     store.fetchData();
@@ -185,6 +180,10 @@ export default {
       await store.deleteItem(item);
       confirmDeleteDialog.value = false; // Close the dialog after deletion
     };
+    watch(() => pagination.value , () => {
+      store.setPagination(pagination.value)
+      
+    });
 
     return {
       store,
@@ -196,7 +195,7 @@ export default {
       editDialog,
       editedItem,
       filteredItems,
-      paginationn,
+      pagination,
       searchdebounce,
       editItem,
       updateProduct,

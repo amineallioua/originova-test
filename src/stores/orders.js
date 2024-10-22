@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
-import apiClient from '@/services/axios';
+import axios from '@/services/axios';
 import router from '@/router';
 export const useOrderStore = defineStore('order', {
   state: () => ({
     orders: [],
-    pagination: 1,
+    pagination: null,
     lastPage: null,
     selectedOrder: null,
     selectedStatus: 'All', // Added selectedStatus to manage filter
@@ -12,10 +12,10 @@ export const useOrderStore = defineStore('order', {
 
   actions: {
     async fetchOrders() {
-      let url = `/orders/?page=${this.pagination}`;
+ 
       
       try {
-        const response = await apiClient.get(url);
+        const response = await axios.get(`/orders/?page=${this.pagination}`);
         this.orders = response.data.data;
         this.lastPage = response.data.pagination.lastPage;
       } catch (error) {
@@ -36,9 +36,9 @@ export const useOrderStore = defineStore('order', {
     async updateOrderStatus(orderId, action) {
       try {
         if (action === 'accept') {
-          await apiClient.post(`/orders/${orderId}/update-order`);
+          await axios.post(`/orders/${orderId}/update-order`);
         } else if (action === 'cancel') {
-          await apiClient.post(`/orders/${orderId}/delete`);
+          await axios.post(`/orders/${orderId}/delete`);
         }
         await this.fetchOrders(); // Refresh after updating the order
       } catch (error) {
@@ -47,11 +47,7 @@ export const useOrderStore = defineStore('order', {
     },
 
     setPagination(page) {
-      if (page === 1 && this.pagination < this.lastPage) {
-        this.pagination++;
-      } else if (page === 2 && this.pagination > 1) {
-        this.pagination--;
-      }
+   this.pagination = page
       this.fetchOrders(); // Fetch orders after changing the pagination
     },
 

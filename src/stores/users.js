@@ -1,5 +1,5 @@
     import { defineStore } from 'pinia';
-    import apiClient from '@/services/axios'; // Ensure the API client is imported
+    import axios from '@/services/axios'; // Ensure the API client is imported
     import router from '@/router';
     export const useUserStoree = defineStore('userr', {
     state: () => ({
@@ -17,7 +17,7 @@
         }
 
         try {
-            const response = await apiClient.get(url);
+            const response = await axios.get(url);
             this.users = response.data.data;
             this.lastPage = response.data.pagination.lastPage;
         } catch (error) {
@@ -36,7 +36,7 @@
 
         async updateUserStatus(userId, action) {
         try {
-            await apiClient.post(`users/${userId}/${action}`, {});
+            await axios.post(`users/${userId}/${action}`, {});
             await this.fetchUsers(); // Refresh the user list after the update
         } catch (error) {
             console.error('Error updating user status:', error);
@@ -44,11 +44,7 @@
         },
 
         setPagination(page) {
-        if (page === 1 && this.pagination < this.lastPage) {
-            this.pagination++;
-        } else if (page === 2 && this.pagination > 1) {
-            this.pagination--;
-        }
+            this.pagination=page
         },
         
         selectUser(user) {
